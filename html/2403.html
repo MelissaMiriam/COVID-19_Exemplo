@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+	<head>							
+		<meta charset="utf-8" /> <!-- tipo de caracteres -->
+		<title>Casos COVID-19 por 10k - Portugal</title>
+			
+	<!-- Importação de bibliotecas JS e css -->			
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+		integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==" 
+		crossorigin=""/>  
+        
+        <script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+        integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA==" 
+        crossorigin=""></script>
+        
+    <!-- Importação do ficheiro geojson -->
+        <script type="text/javascript" src="../dados/COVID_P10K.geojson"></script>
+	
+	<!-- Definição dos estilos css -->
+        <style>
+          /* Optional: adjust the values below to change the appearance of the legend */
+          .legend {
+              padding: 6px 8px;
+              line-height: 18px;
+              background: rgba(255,255,255,0.9);
+              box-shadow: 0 0 15px rgba(0,0,0,0.2);
+              border-radius: 5px;
+          }
+
+           /* Optional: adjust the values below to change the appearance of the legend color boxes */
+           .legend i {
+              width: 18px;
+              height: 18px;
+              float: left;
+              margin-right: 8px;
+              opacity: 0.7;
+          }
+          font-family: Arial, Helvetica, sans-serif;
+}
+ #wrapper {
+  margin: 0 auto;
+  width: 100%;
+}
+
+ #panel{
+ float: left;
+  width: 100%;
+  height:60px;
+background-color: #990000;
+color:white;
+}
+
+ #map {
+  float: left;
+  width: 90%;
+  padding-bottom:7.5%;
+  vertical-align:middle;
+  height:600px;
+} 
+
+.sidebar {
+  float: right;
+	width: 10%;
+	height:700px;
+   background-color: #696969;
+   font-size:18px;
+   font-weight:bold;
+   color: white;
+}
+
+
+	#txtboxes{
+	font-size:23px;
+	font-weight:bold;
+	display:inline-block;
+	text-align: center;
+	margin: auto;
+    width: 95%;
+    padding: 15px;
+}
+
+.button {
+    display: block;
+    width: 115px;
+    height: 25px;
+    background: #909090;
+    padding: 9px;
+    text-align: center;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    line-height: 22px;
+	font-size: 15px;
+}
+
+.rodape {
+   position:absolute;
+   bottom:0;
+   width:65%;
+   height:35px;   /* Mesma Altura do Rodapé */
+   background:white;
+   text-align: left;
+   font:13px Verdana
+}
+
+		</style>
+	</head>
+	
+	<div id="panel">
+		<div id="txtboxes">
+		
+	<body class="panel" style="font:27px Verdana">
+		Casos COVID-19 por municipio (nº por 10 mil habitantes)
+		</div>
+	</div>
+	
+		 <div id="map" style="height: 550px; position: relative; outline: currentcolor none medium;" class="leaflet-container leaflet-touch leaflet-fade-anim leaflet-grab leaflet-touch-drag leaflet-touch-zoom" tabindex="0"><div class="leaflet-pane leaflet-map-pane" style="transform: translate3d(-2px, 2px, 0px);"></div></div>
+		
+		<script type="text/javascript">
+ 
+          var map = L.map('map', {
+              center: [38.455090, -17.897689],
+              zoom: 5.68
+          });
+		
+		L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+           attribution: 'Map data © OpenStreetMap contributors, CC-BY-SA, Imagery © Mapbox',
+           maxZoom: 11,
+           minZoom: 5,
+           id: 'mapbox.light',
+           accessToken: 'pk.eyJ1IjoiY3VyZW1hbmdvIiwiYSI6ImNpcTQ4cGFwbDAxbmVmd25vZGNiOTVzeGEifQ.GWZByYkIft6eMRha69C8nw'
+         }).addTo(map);
+			
+		
+
+         function getColor(value) {
+            return value > 100 ? '#800000':
+                   value > 50  ? '#cc0000':
+                   value > 20  ? '#ff0000':
+                   value > 10  ? '#ff8080':
+                   value > 5   ? '#ffb3b3':
+                   value > 1   ? '#ffe6e6':
+                                 '#f2f0f7';
+        }
+
+        function style(feature){
+            return {
+                fillColor: getColor(feature.properties.Casos_2403),   // Casos_2403 is the field name for the population density data
+                weight: 2,
+                opacity: 1,
+                color: 'gray',
+                fillOpacity: 0.9
+            };
+        }      
+		
+		function highlightFeature(e) {
+            // Get access to the feature that was hovered through e.target
+            var feature = e.target;
+
+            // Set a thick grey border on the feature when as mouseover effect
+            // Adjust the values below to change the highlighting styles of features on mouseover
+            // Check out https://leafletjs.com/reference-1.3.4.html#path for more options for changing style
+            feature.setStyle({
+                weight: 5,
+                color: '#ff3333',
+                fillOpacity: 0.7
+            });	
+            
+  
+            // Bring the highlighted feature to front so that the border doesn’t clash with nearby states
+            // But not for IE, Opera or Edge, since they have problems doing bringToFront on mouseover
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                feature.bringToFront();
+            }
+        }
+            
+        var geojson; // define a variable to make the geojson layer accessible for the funtion to use   
+            
+        function resetHighlight(e) {
+            geojson.resetStyle(e.target);
+        }
+
+            
+        function onEachFeature(feature, layer) {
+            layer.on({
+                mouseover: highlightFeature, // Do what defined by the highlightFeature function on mouseover
+                mouseout: resetHighlight,    // Do what defined by the resetHighlight function on mouseout
+            });
+        }
+              
+        
+        geojson = L.geoJson(data, {
+            style:style,
+            onEachFeature: onEachFeature
+        }).bindTooltip(function (layer){
+            return layer.feature.properties.Concelho 
+                   + '<p style="color:red">' + layer.feature.properties.Casos_2403.toString() + ' casos por 10.000 hab. </p>';     
+        }).addTo(map);
+
+         var legend = L.control({position: 'bottomright'}); // Try the other three corners if you like.
+
+          legend.onAdd = function (map) {
+
+              var div = L.DomUtil.create('div', 'legend'),
+                  grades = [1, 5, 10, 20, 50, 100]; // The break values to define the intervals of population, note we begin from 0 here
+
+              div.innerHTML = '<b>Casos COVID-19<br> por 10 mil habitantes <br></b>'; // The legend title, in this case it's Casos covid-19 por 10 mil habitantes
+
+              // Loop through our the classes and generate a label with a colored square for each interval.
+              // If you are creating a similar choropleth map, you do not need to change lines below.
+              for (var i = 0; i < grades.length; i++) {
+                  div.innerHTML +=
+                  '<i style="background:' + getColor(grades[i] + 1) + '"></i>' +
+                  grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+              }
+
+              return div;
+          };
+
+             legend.addTo(map);        
+	</script>	
+
+	<div class="sidebar">
+		<hr><p style="text-align:center; font:20px Verdana; font-weight:bold;"> Data </p>	
+
+				<div class="container" align="center">
+					<a href="./2405.html" class="button"> 24 de maio </a><br>
+					<a href="./2404.html" class="button"> 24 de abril </a><br>
+					<a href="./2403.html" class="button" style="background-color: #990000"> 24 de março </a><br>
+					
+					<br><hr>
+					<table id="myTable" style="width:90%; ">	<tbody><tr><th>COVID-19</th></tr></tbody></table>
+				</div>
+	
+	</div>
+	
+	</body>
+	<div class="rodape">
+		<p> IGOT - Mestrado em Sistemas de Informação Geográfica e Modelação Territorial aplicados ao Ordenamento  2019/2020  WebSIG <strong> Melissa Silva</strong></p>
+	</div>
+</html>

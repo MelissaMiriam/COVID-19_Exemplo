@@ -1,0 +1,226 @@
+<html>
+	<head>
+		<title></title>
+		
+		 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+   integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+   crossorigin=""/>
+		
+		 <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+   integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+   crossorigin=""></script>
+
+		  <script type="text/javascript" src="./dados/COVID_P10K.geojson"></script>
+	
+	<style>
+		.legend {
+			padding: 6px 8px;
+            line-height: 18px;
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+          }
+		  
+		.legend i {
+			width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+          }
+          font-family: Arial, Helvetica, sans-serif;
+}
+
+ #wrapper {
+  margin: 0 auto;
+  width: 100%;
+}
+
+ #panel{
+ float: left;
+  width: 100%;
+  height:60px;
+background-color: #990000;
+color:white;
+}
+
+
+	#txtboxes{
+	font-size:23px;
+	font-weight:bold;
+	display:inline-block;
+	text-align: center;
+	margin: auto;
+    width: 95%;
+    padding: 15px;
+}
+
+ #map {
+  float: left;
+  width: 90%;
+  padding-bottom:7.5%;
+  vertical-align:middle;
+  height:600px;
+} 
+
+.sidebar {
+  float: right;
+	width: 10%;
+	height:700px;
+   background-color: #696969;
+   font-size:18px;
+   font-weight:bold;
+   color: white;
+}
+
+.button {
+    display: block;
+    width: 115px;
+    height: 25px;
+    background: #909090;
+    padding: 9px;
+    text-align: center;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    line-height: 22px;
+	font-size: 15px;
+}
+
+.rodape {
+   position:absolute;
+   bottom:0;
+   width:65%;
+   height:35px;   /* Mesma Altura do Rodapé */
+   background:white;
+   text-align: left;
+   font:13px Verdana
+}
+
+	</style>
+	
+	
+	
+	</head>
+	
+	<div id="panel">
+		<div id="txtboxes"> Casos COVID-19 por municipio (nº por 10 mil habitantes) 
+		</div>
+	</div>
+	
+	<body class="panel" style="font:27px Verdana">
+	<div id="map" style="height: 550px; position: relative; outline: currentcolor none medium;" class="leaflet-container leaflet-touch leaflet-fade-anim leaflet-grab leaflet-touch-drag leaflet-touch-zoom" tabindex="0"><div class="leaflet-pane leaflet-map-pane" style="transform: translate3d(-2px, 2px, 0px);"></div></div>
+	<script type="text/javascript">
+	
+	  var map = L.map('map', {
+	      center: [38.8, -18.7],
+		  zoom: 6
+	  });
+	
+		L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+           attribution: 'Map data © OpenStreetMap contributors, CC-BY-SA, Imagery © Mapbox',
+           maxZoom: 11,
+           minZoom: 5,
+           id: 'mapbox.light',
+           accessToken: 'pk.eyJ1IjoiY3VyZW1hbmdvIiwiYSI6ImNpcTQ4cGFwbDAxbmVmd25vZGNiOTVzeGEifQ.GWZByYkIft6eMRha69C8nw'
+         }).addTo(map);
+	
+	
+	  function getColor(value) {
+       return value > 100 ? '#800000':
+              value > 50  ? '#cc0000':
+              value > 20  ? '#ff0000':
+              value > 10  ? '#ff8080':
+              value > 5   ? '#ffb3b3':
+              value > 1   ? '#ffe6e6':
+                            '#f2f0f7';
+}
+
+
+	function style(feature) {
+    return {
+        fillColor: getColor(feature.properties),
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        fillOpacity: 0.7
+    };
+}
+
+
+function highlightFeature(e) {
+    var layer = e.target;
+
+    layer.setStyle({
+        weight: 5,
+        color: '#666',
+        fillOpacity: 0.7
+    });
+
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+    }
+}
+
+	function resetHighlight(e) {
+    geojson.resetStyle(e.target);
+}
+
+var geojson;
+
+
+function onEachFeature(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+    });
+}
+
+geojson = L.geoJson(data, {
+    style:style,
+    onEachFeature: onEachFeature
+}).bindTooltip(function (layer) {
+	return layer.feature.properties.Concelho
+}).addTo(map);
+
+
+var legend = L.control({position: 'bottomright'});
+
+legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'legend'),
+        grades = [1, 5, 10, 20, 50, 100];
+		
+	div.innerHTML = '<b>Casos COVID-19 <br> por 10 mil habitantes<br></b>';
+
+    // loop through our density intervals and generate a label with a colored square for each interval
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+            grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    }
+
+    return div;
+};
+
+<!-- legend.addTo(map); --> 
+
+	</script>
+	<div class="sidebar">
+		<hr><p style="text-align:center; font:20px Verdana; font-weight:bold;"> Data </p>
+			<div class="container" align="center">
+				<a href="./html/2405.html" class="button"> 24 de maio</a><br>
+				<a href="./html/2404.html" class="button"> 24 de abril</a><br>
+				<a href="./html/2403.html" class="button"> 24 de março</a><br>
+				
+				<br><hr>
+				<table id="myTable" style="width:90%; ">	<tbody><tr><th>COVID-19</th></tr></tbody></table>
+			</div>
+	</div>
+	</body>
+	
+	<div class="rodape">
+		<p> IGOT - Mestrado em Sistemas de Informação Geográfica e Modelação Territorial aplicados ao Ordenamento  2019/2020  WebSIG</p>
+	</div>
+
+</html>
